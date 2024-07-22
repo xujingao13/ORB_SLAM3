@@ -61,13 +61,14 @@ static rs2_option get_sensor_option(const rs2::sensor& sensor)
     {
         rs2_option option_type = static_cast<rs2_option>(i);
         //SDK enum types can be streamed to get a string that represents them
-        std::cout << "  " << i << ": " << option_type;
+        // std::cout << "  " << i << ": " << option_type;
 
         // To control an option, use the following api:
 
         // First, verify that the sensor actually supports this option
         if (sensor.supports(option_type))
         {
+            std::cout << "  " << i << ": " << option_type;
             std::cout << std::endl;
 
             // Get a human readable description of the option
@@ -81,7 +82,8 @@ static rs2_option get_sensor_option(const rs2::sensor& sensor)
             //To change the value of an option, please follow the change_sensor_option() function
         }
         else
-        {
+        {   
+            continue;
             std::cout << " is not supported" << std::endl;
         }
     }
@@ -117,7 +119,7 @@ int main(int argc, char **argv) {
     double offset = 0; // ms
 
     rs2::context ctx;
-    rs2::device_list devices = ctx.query_devices();
+    rs2::device_list devices = ctx.query_devices();//create a static snapshot of all connected devices at the time of the call
     rs2::device selected_device;
     if (devices.size() == 0)
     {
@@ -130,7 +132,7 @@ int main(int argc, char **argv) {
     std::vector<rs2::sensor> sensors = selected_device.query_sensors();
     int index = 0;
     // We can now iterate the sensors and print their names
-    for (rs2::sensor sensor : sensors)
+    for (rs2::sensor sensor : sensors)//传感器 1双目、2RGB、3运动
         if (sensor.supports(RS2_CAMERA_INFO_NAME)) {
             ++index;
             if (index == 1) {
@@ -138,12 +140,13 @@ int main(int argc, char **argv) {
                 sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,5000);
                 sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0); // switch off emitter
             }
-            // std::cout << "  " << index << " : " << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
+            std::cout << "  " << index << " : " << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
             get_sensor_option(sensor);
             if (index == 2){
                 // RGB camera (not used here...)
                 sensor.set_option(RS2_OPTION_EXPOSURE,100.f);
             }
+            
         }
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors
@@ -155,7 +158,7 @@ int main(int argc, char **argv) {
 
     // IMU callback
     std::mutex imu_mutex;
-    std::condition_variable cond_image_rec;
+    std::condition_variable cond_image_rec; //多线程条件变量
 
     cv::Mat imCV, imRightCV;
     int width_img, height_img;
@@ -163,7 +166,7 @@ int main(int argc, char **argv) {
     bool image_ready = false;
     int count_im_buffer = 0; // count dropped frames
 
-    auto imu_callback = [&](const rs2::frame& frame)
+    auto imu_callback = [&](const rs2::frame& frame) //[&] 匿名函数
     {
         std::unique_lock<std::mutex> lock(imu_mutex);
 
@@ -188,7 +191,7 @@ int main(int argc, char **argv) {
             image_ready = true;
 
             lock.unlock();
-            cond_image_rec.notify_all();
+            cond_image_rec.notify_all();//唤醒所有
         }
     };
 
@@ -247,7 +250,7 @@ int main(int argc, char **argv) {
     double t_resize = 0.f;
     double t_track = 0.f;
 
-    while (!SLAM.isShutDown())
+    while (b_continue_session)
     {
         std::vector<rs2_vector> vGyro;
         std::vector<double> vGyro_times;
@@ -270,10 +273,10 @@ int main(int argc, char **argv) {
             count_im_buffer = 0;
 
             timestamp = timestamp_image;
-            im = imCV.clone();
+            im = imCV.clone();//这边必须得深拷贝，防止后续回调函数对其修改
             imRight = imRightCV.clone();
 
-            image_ready = false;
+            image_ready = false;//使用完图片后，将其置为false
         }
 
         if(imageScale != 1.f)
@@ -320,5 +323,12 @@ int main(int argc, char **argv) {
         SLAM.InsertTrackTime(t_track);
 #endif
     }
+        // Stop all threads
+    SLAM.Shutdown();
+
+    // Save camera trajectory
+    SLAM.SaveTrajectoryEuRoC("CameraTrajectory.txt");
+    SLAM.SaveKeyFrameTrajectoryEuRoC("KeyFrameTrajectory.txt");
+
     cout << "System shutdown!\n";
 }

@@ -1237,7 +1237,7 @@ void TemplatedVocabulary<TDescriptor,F>::transform(const TDescriptor &feature,
  
     double best_d = F::distance(feature, m_nodes[final_id].descriptor);
 
-    for(nit = nodes.begin() + 1; nit != nodes.end(); ++nit)
+    for(nit = nodes.begin() + 1; nit != nodes.end(); ++nit)//这边为什么要+1，距离上面已经计算过一次了
     {
       NodeId id = *nit;
       double d = F::distance(feature, m_nodes[id].descriptor);

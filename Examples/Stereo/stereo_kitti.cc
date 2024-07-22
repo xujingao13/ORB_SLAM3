@@ -110,6 +110,8 @@ int main(int argc, char **argv)
 
         // Pass the images to the SLAM system
         SLAM.TrackStereo(imLeft,imRight,tframe);
+//        Sophus::SE3f Tcw_tose =  SLAM.TrackStereo(imLeft,imRight,tframe);
+//        std::cout<< Tcw_tose.inverse() .matrix() <<std::endl;
 
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -152,7 +154,9 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    SLAM.SaveTrajectoryKITTI("CameraTrajectory.txt");
+//     SLAM.SaveTrajectoryKITTI("CameraTrajectory.txt");
+        SLAM.SaveTrajectoryEuRoC("CameraTrajectory.txt");
+
 
     return 0;
 }
@@ -160,9 +164,43 @@ int main(int argc, char **argv)
 void LoadImages(const string &strPathToSequence, vector<string> &vstrImageLeft,
                 vector<string> &vstrImageRight, vector<double> &vTimestamps)
 {
+    // ifstream fTimes;
+    // string strPathTimeFile = strPathToSequence + "/times.txt";
+    // fTimes.open(strPathTimeFile.c_str());
+    // while(!fTimes.eof())
+    // {
+    //     string s;
+    //     getline(fTimes,s);
+    //     if(!s.empty())
+    //     {
+    //         stringstream ss;
+    //         ss << s;
+    //         double t;
+    //         ss >> t;
+    //         vTimestamps.push_back(t);
+    //     }
+    // }
+
+    // string strPrefixLeft = strPathToSequence + "/cam0/";
+    // string strPrefixRight = strPathToSequence + "/cam1/";
+
+    // const int nTimes = vTimestamps.size();
+    // vstrImageLeft.resize(nTimes);
+    // vstrImageRight.resize(nTimes);
+
+    // for(int i=0; i<nTimes; i++)
+    // {
+    //     stringstream ss;
+    //     // ss << setfill('0') << setw(6) << i;
+    //     vstrImageLeft[i] = strPrefixLeft + ss.str() + ".png";
+    //     vstrImageRight[i] = strPrefixRight + ss.str() + ".png";
+    // }
     ifstream fTimes;
-    string strPathTimeFile = strPathToSequence + "/times.txt";
-    fTimes.open(strPathTimeFile.c_str());
+    string strPathTimes = strPathToSequence + "/times.txt";
+    fTimes.open(strPathTimes.c_str());
+    vTimestamps.reserve(5000);
+    vstrImageLeft.reserve(5000);
+    vstrImageRight.reserve(5000);
     while(!fTimes.eof())
     {
         string s;
@@ -171,24 +209,11 @@ void LoadImages(const string &strPathToSequence, vector<string> &vstrImageLeft,
         {
             stringstream ss;
             ss << s;
+            vstrImageLeft.push_back(strPathToSequence +"/image_0" +"/" + ss.str() + ".png");
+            vstrImageRight.push_back(strPathToSequence +"/image_1"+ "/" + ss.str() + ".png");
             double t;
             ss >> t;
-            vTimestamps.push_back(t);
+            vTimestamps.push_back(t/1e9);
         }
-    }
-
-    string strPrefixLeft = strPathToSequence + "/image_0/";
-    string strPrefixRight = strPathToSequence + "/image_1/";
-
-    const int nTimes = vTimestamps.size();
-    vstrImageLeft.resize(nTimes);
-    vstrImageRight.resize(nTimes);
-
-    for(int i=0; i<nTimes; i++)
-    {
-        stringstream ss;
-        ss << setfill('0') << setw(6) << i;
-        vstrImageLeft[i] = strPrefixLeft + ss.str() + ".png";
-        vstrImageRight[i] = strPrefixRight + ss.str() + ".png";
     }
 }

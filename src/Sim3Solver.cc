@@ -75,17 +75,19 @@ Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> 
             MapPoint* pMP1 = vpKeyFrameMP1[i1];
             MapPoint* pMP2 = vpMatched12[i1];
 
-            if(!pMP1)
+            if(!pMP1)//此处为何没有判断pMP2存在否 是bug？
+                continue;
+            if(!pMP2)//此处为何没有判断pMP2存在否 是bug？
                 continue;
 
             if(pMP1->isBad() || pMP2->isBad())
                 continue;
 
             if(bDifferentKFs)
-                pKFm = vpKeyFrameMatchedMP[i1];
+                pKFm = vpKeyFrameMatchedMP[i1];//搞个鸡毛
 
             int indexKF1 = get<0>(pMP1->GetIndexInKeyFrame(pKF1));
-            int indexKF2 = get<0>(pMP2->GetIndexInKeyFrame(pKFm));
+            int indexKF2 = get<0>(pMP2->GetIndexInKeyFrame(pKFm));//限制了地图点只能在候选帧中出现 
 
             if(indexKF1<0 || indexKF2<0)
                 continue;
@@ -117,7 +119,7 @@ Sim3Solver::Sim3Solver(KeyFrame *pKF1, KeyFrame *pKF2, const vector<MapPoint *> 
     FromCameraToImage(mvX3Dc1,mvP1im1,pCamera1);
     FromCameraToImage(mvX3Dc2,mvP2im2,pCamera2);
 
-    SetRansacParameters();
+    SetRansacParameters();//此处似乎没有用
 }
 
 void Sim3Solver::SetRansacParameters(double probability, int minInliers, int maxIterations)
@@ -139,11 +141,11 @@ void Sim3Solver::SetRansacParameters(double probability, int minInliers, int max
     if(mRansacMinInliers==N)
         nIterations=1;
     else
-        nIterations = ceil(log(1-mRansacProb)/log(1-pow(epsilon,3)));
+        nIterations = ceil(log(1-mRansacProb)/log(1-pow(epsilon,3)));//循环次数
 
     mRansacMaxIts = max(1,min(nIterations,mRansacMaxIts));
 
-    mnIterations = 0;
+    mnIterations = 0;//当前循环次数
 }
 
 Eigen::Matrix4f Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInliers, int &nInliers)

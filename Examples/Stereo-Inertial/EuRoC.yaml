@@ -7,10 +7,10 @@
 # When the variables are commented, the system doesn't load a previous session or not store the current one
 
 # If the LoadFile doesn't exist, the system give a message and create a new Atlas from scratch
-#System.LoadAtlasFromFile: "Session_MH01_MH02_MH03_Stereo60_Pseudo"
+# System.LoadAtlasFromFile: "mapeuro_my"
 
 # The store file is created from the current session, if a file with the same name exists it is deleted
-#System.SaveAtlasToFile: "Session_MH01_MH02_MH03_Stereo60_Pseudo"
+System.SaveAtlasToFile: "mapeuro_my1"
 
 #--------------------------------------------------------------------------------------------
 # Camera Parameters. Adjust them!
@@ -50,7 +50,7 @@ Camera.fps: 20
 Camera.RGB: 1
 
 # Close/Far threshold. Baseline times.
-Stereo.ThDepth: 60.0
+Stereo.ThDepth: 60.0 #基线的倍数
 Stereo.T_c1_c2: !!opencv-matrix
   rows: 4
   cols: 4
@@ -111,4 +111,3 @@ Viewer.ViewpointY: -0.7
 Viewer.ViewpointZ: -1.8
 Viewer.ViewpointF: 500.0
 Viewer.imageViewScale: 1.0
-

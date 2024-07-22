@@ -146,12 +146,12 @@ namespace ORB_SLAM3 {
 
         //Read second camera if stereo (not rectified)
         if(sensor_ == System::STEREO || sensor_ == System::IMU_STEREO){
-            readCamera2(fSettings);
+            readCamera2(fSettings);//bNeedToRectify_ 此处默认双目需要畸变矫正 若使用zed则需要修改
             cout << "\t-Loaded camera 2" << endl;
         }
 
         //Read image info
-        readImageInfo(fSettings);
+        readImageInfo(fSettings);////bNeedToResize1_ 
         cout << "\t-Loaded image info" << endl;
 
         if(sensor_ == System::IMU_MONOCULAR || sensor_ == System::IMU_STEREO || sensor_ == System::IMU_RGBD){
@@ -164,7 +164,7 @@ namespace ORB_SLAM3 {
             cout << "\t-Loaded RGB-D calibration" << endl;
         }
 
-        readORB(fSettings);
+        readORB(fSettings);//有关ORB特征的参数设定
         cout << "\t-Loaded ORB settings" << endl;
         readViewer(fSettings);
         cout << "\t-Loaded viewer settings" << endl;
@@ -174,7 +174,7 @@ namespace ORB_SLAM3 {
         cout << "\t-Loaded misc parameters" << endl;
 
         if(bNeedToRectify_){
-            precomputeRectificationMaps();
+            precomputeRectificationMaps();//计算重投影映射
             cout << "\t-Computed rectification maps" << endl;
         }
 
@@ -344,7 +344,7 @@ namespace ORB_SLAM3 {
 
             //TODO: also search for Trl and invert if necessary
 
-            b_ = Tlr_.translation().norm();
+            b_ = Tlr_.translation().norm();//平移的量的距离
             bf_ = b_ * calibration1_->getParameter(0);
         }
 
@@ -368,7 +368,7 @@ namespace ORB_SLAM3 {
             newImSize_.height = newHeigh;
 
             if(!bNeedToRectify_){
-                //Update calibration
+                //Update calibration  mvParameters：{fx, fy, cx, cy}
                 float scaleRowFactor = (float)newImSize_.height / (float)originalImSize_.height;
                 calibration1_->setParameter(calibration1_->getParameter(1) * scaleRowFactor, 1);
                 calibration1_->setParameter(calibration1_->getParameter(3) * scaleRowFactor, 3);
@@ -558,11 +558,14 @@ namespace ORB_SLAM3 {
             else{
                 output << "Kannala-Brandt";
             }
-            output << "" << ": [";
+            output << ")" << ": [";
+            if(!settings.originalCalib2_){
             for(size_t i = 0; i < settings.originalCalib2_->size(); i++){
                 output << " " << settings.originalCalib2_->getParameter(i);
             }
+            }
             output << " ]" << endl;
+
 
             if(!settings.vPinHoleDistorsion2_.empty()){
                 output << "\t-Camera 1 distortion parameters: [ ";

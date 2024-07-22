@@ -8,6 +8,8 @@ endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall  -O3 -march=native ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall  -O3 -march=native")
 
+#set(OpenCV_DIR "/home/biao/3thparty/opencv-3.4.12/build")
+
 set(HDRS_DBOW2
   DBoW2/BowVector.h
   DBoW2/FORB.h 
@@ -29,13 +31,8 @@ set(SRCS_DUTILS
   DUtils/Timestamp.cpp)
 
 
-find_package(OpenCV 4 QUIET)
-if(NOT OpenCV_FOUND)
-   find_package(OpenCV 3.0 QUIET)
-   if(NOT OpenCV_FOUND)
-      message(FATAL_ERROR "OpenCV > 3.0 not found.")
-   endif()
-endif()
+find_package(OpenCV 4 REQUIRED)
+
 
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 

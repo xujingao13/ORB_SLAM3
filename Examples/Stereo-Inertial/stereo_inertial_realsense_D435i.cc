@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
     sigaction(SIGINT, &sigIntHandler, NULL);
     b_continue_session = true;
 
-    double offset = 0; // ms
+    double offset = 0; // ms imu的数据延迟
 
     rs2::context ctx;
     rs2::device_list devices = ctx.query_devices();
@@ -161,8 +161,8 @@ int main(int argc, char **argv) {
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_Y8, 30);
     cfg.enable_stream(RS2_STREAM_INFRARED, 2, 640, 480, RS2_FORMAT_Y8, 30);
-    cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
-    cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F);
+    cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F,200);
+    cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F,200);
 
     // IMU callback
     std::mutex imu_mutex;
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
             lock.unlock();
             cond_image_rec.notify_all();
         }
-        else if (rs2::motion_frame m_frame = frame.as<rs2::motion_frame>())
+        else if (rs2::motion_frame m_frame = frame.as<rs2::motion_frame>())//判断输入流类型
         {
             if (m_frame.get_profile().stream_name() == "Gyro")
             {
@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
             }
             else if (m_frame.get_profile().stream_name() == "Accel")
             {
-                // It runs at 60Hz
+                // It runs at 60Hz 由于加速度计的采样频率小于角速度计 需要对其进行插值处理
                 prev_accel_timestamp = current_accel_timestamp;
                 prev_accel_data = current_accel_data;
 

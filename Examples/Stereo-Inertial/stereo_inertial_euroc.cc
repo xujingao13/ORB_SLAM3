@@ -85,9 +85,13 @@ int main(int argc, char **argv)
         string pathSeq(argv[(2*seq) + 3]);
         string pathTimeStamps(argv[(2*seq) + 4]);
 
-        string pathCam0 = pathSeq + "/mav0/cam0/data";
-        string pathCam1 = pathSeq + "/mav0/cam1/data";
-        string pathImu = pathSeq + "/mav0/imu0/data.csv";
+        string pathCam0 = pathSeq + "/cam0/data/";
+        string pathCam1 = pathSeq + "/cam1/data/";
+        string pathImu = pathSeq + "/imu0/data.txt";
+
+        // string pathCam0 = pathSeq + "/cam0";
+        // string pathCam1 = pathSeq + "/cam1";
+        // string pathImu = pathSeq + "/imu0/data.txt";
 
         LoadImages(pathCam0, pathCam1, pathTimeStamps, vstrImageLeft[seq], vstrImageRight[seq], vTimestampsCam[seq]);
         cout << "LOADED!" << endl;
@@ -119,7 +123,7 @@ int main(int argc, char **argv)
     {
         cerr << "ERROR: Wrong path to settings" << endl;
         return -1;
-    }
+    }//多余读取
 
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
@@ -129,7 +133,7 @@ int main(int argc, char **argv)
     cout.precision(17);
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::IMU_STEREO, false);
+    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::IMU_STEREO, true);
 
     cv::Mat imLeft, imRight;
     for (seq = 0; seq<num_seq; seq++)
@@ -167,12 +171,27 @@ int main(int argc, char **argv)
             vImuMeas.clear();
 
             if(ni>0)
-                while(vTimestampsImu[seq][first_imu[seq]]<=vTimestampsCam[seq][ni]) // while(vTimestampsImu[first_imu]<=vTimestampsCam[ni])
                 {
-                    vImuMeas.push_back(ORB_SLAM3::IMU::Point(vAcc[seq][first_imu[seq]].x,vAcc[seq][first_imu[seq]].y,vAcc[seq][first_imu[seq]].z,
-                                                             vGyro[seq][first_imu[seq]].x,vGyro[seq][first_imu[seq]].y,vGyro[seq][first_imu[seq]].z,
-                                                             vTimestampsImu[seq][first_imu[seq]]));
-                    first_imu[seq]++;
+                    while(vTimestampsImu[seq][first_imu[seq]]<=vTimestampsCam[seq][ni])
+                    {
+
+                        vImuMeas.push_back(ORB_SLAM3::IMU::Point(vAcc[seq][first_imu[seq]].x,vAcc[seq][first_imu[seq]].y,vAcc[seq][first_imu[seq]].z,
+                                                                vGyro[seq][first_imu[seq]].x,vGyro[seq][first_imu[seq]].y,vGyro[seq][first_imu[seq]].z,
+                                                                vTimestampsImu[seq][first_imu[seq]]));
+                        first_imu[seq]++;
+                    }   
+                    if(vImuMeas.size()==0)
+                    {
+                        // cout<<"imu_row: "<<first_imu[seq]<<"has been occupied"<<endl;
+                        cout<<vTimestampsCam[seq][ni]<<" don't have IMU data!"<<endl;
+                        cout<<"using nearest IMU data to pad"<<endl;
+                        vImuMeas.push_back(ORB_SLAM3::IMU::Point(vAcc[seq][first_imu[seq]-1].x,vAcc[seq][first_imu[seq]-1].y,vAcc[seq][first_imu[seq]-1].z,
+                                                vGyro[seq][first_imu[seq]-1].x,vGyro[seq][first_imu[seq]-1].y,vGyro[seq][first_imu[seq]-1].z,vTimestampsCam[seq][ni]-0.003));
+                        vImuMeas.push_back(ORB_SLAM3::IMU::Point(vAcc[seq][first_imu[seq]-1].x,vAcc[seq][first_imu[seq]-1].y,vAcc[seq][first_imu[seq]-1].z,
+                                                vGyro[seq][first_imu[seq]-0.002].x,vGyro[seq][first_imu[seq]-1].y,vGyro[seq][first_imu[seq]-1].z,vTimestampsCam[seq][ni]-0.01));
+                        vImuMeas.push_back(ORB_SLAM3::IMU::Point(vAcc[seq][first_imu[seq]-1].x,vAcc[seq][first_imu[seq]-1].y,vAcc[seq][first_imu[seq]-1].z,
+                                                vGyro[seq][first_imu[seq]-1].x,vGyro[seq][first_imu[seq]-1].y,vGyro[seq][first_imu[seq]-1].z,vTimestampsCam[seq][ni]-0.001));
+                    }
                 }
 
     #ifdef COMPILEDWITHC11
@@ -301,3 +320,4 @@ void LoadIMU(const string &strImuPath, vector<double> &vTimeStamps, vector<cv::P
         }
     }
 }
+
