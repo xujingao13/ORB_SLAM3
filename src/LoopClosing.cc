@@ -2585,4 +2585,10 @@ bool LoopClosing::isFinished()
 }
 
 
+bool LoopClosing::mergeDetected()
+{
+    return mbMergeDetected;
+}
+
+
 } //namespace ORB_SLAM

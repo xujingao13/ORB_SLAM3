@@ -82,6 +82,8 @@ public:
 
     bool isFinished();
 
+    bool mergeDetected();
+
     bool mergeFinished=false;
     Viewer* mpViewer;
 

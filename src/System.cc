@@ -237,6 +237,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     // Fix verbosity
     Verbose::SetTh(Verbose::VERBOSITY_NORMAL);
 
+    cout << "INIT COMPLETE" << endl;
+
 }
 
 Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
@@ -526,20 +528,22 @@ void System::Shutdown()
         mpViewer->RequestFinish();
         while(!mpViewer->isFinished())
             usleep(5000);
+        delete mpViewer;
+        mpViewer = static_cast<Viewer*>(NULL);
     }
 
     // Wait until all thread have effectively stopped
     while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished() || mpLoopCloser->isRunningGBA())
     {
-        if(!mpLocalMapper->isFinished())
-            cout << "mpLocalMapper is not finished" << endl;
-        if(!mpLoopCloser->isFinished())
-            cout << "mpLoopCloser is not finished" << endl;
-        if(mpLoopCloser->isRunningGBA()){
-            cout << "mpLoopCloser is running GBA" << endl;
-            cout << "break anyway..." << endl;
-            break;
-        }
+        // if(!mpLocalMapper->isFinished())
+        //     cout << "mpLocalMapper is not finished" << endl;
+        // if(!mpLoopCloser->isFinished())
+        //     cout << "mpLoopCloser is not finished" << endl;
+        // if(mpLoopCloser->isRunningGBA()){
+        //     cout << "mpLoopCloser is running GBA" << endl;
+        //     cout << "break anyway..." << endl;
+        //     break;
+        // }
         usleep(5000);
     }
 
@@ -549,8 +553,8 @@ void System::Shutdown()
         SaveAtlas(FileType::BINARY_FILE);
     }
 
-    /*if(mpViewer)
-        pangolin::BindToContext("ORB-SLAM2: Map Viewer");*/
+    if(mpViewer)
+        pangolin::BindToContext("ORB-SLAM2: Map Viewer");
 
 #ifdef REGISTER_TIMES
     mpTracker->PrintTimeStats();
@@ -1332,6 +1336,17 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
 {
     unique_lock<mutex> lock(mMutexState);
     return mTrackedKeyPointsUn;
+}
+
+
+Atlas* System::GetAtlas()
+{
+    return mpAtlas;
+}
+
+LoopClosing* System::GetLoopClosing()
+{
+    return mpLoopCloser;
 }
 
 double System::GetTimeFromIMUInit()
