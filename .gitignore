@@ -96,3 +96,5 @@ borrar/*
 
 */ExecMean.txt
 **core.**
+*.osa
+.vscode/
