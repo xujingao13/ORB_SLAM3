@@ -140,6 +140,7 @@ public:
     void Shutdown();
     bool isShutDown();
 
+    void SaveAtlasfromViewer();
     // Save camera trajectory in the TUM RGB-D dataset format.
     // Only for stereo and RGB-D. This method does not work for monocular.
     // Call first Shutdown()

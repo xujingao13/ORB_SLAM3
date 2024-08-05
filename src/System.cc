@@ -512,6 +512,15 @@ void System::ResetActiveMap()
     mbResetActiveMap = true;
 }
 
+void System::SaveAtlasfromViewer()
+{
+    if(!mStrSaveAtlasToFile.empty())
+    {
+        Verbose::PrintMess("Atlas saving to file " + mStrSaveAtlasToFile, Verbose::VERBOSITY_NORMAL);
+        SaveAtlas(FileType::BINARY_FILE);
+    }
+}
+
 void System::Shutdown()
 {
     {
@@ -547,11 +556,11 @@ void System::Shutdown()
         usleep(5000);
     }
 
-    if(!mStrSaveAtlasToFile.empty())
-    {
-        Verbose::PrintMess("Atlas saving to file " + mStrSaveAtlasToFile, Verbose::VERBOSITY_NORMAL);
-        SaveAtlas(FileType::BINARY_FILE);
-    }
+    // if(!mStrSaveAtlasToFile.empty())
+    // {
+    //     Verbose::PrintMess("Atlas saving to file " + mStrSaveAtlasToFile, Verbose::VERBOSITY_NORMAL);
+    //     SaveAtlas(FileType::BINARY_FILE);
+    // }
 
     if(mpViewer)
         pangolin::BindToContext("ORB-SLAM2: Map Viewer");

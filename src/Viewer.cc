@@ -359,6 +359,9 @@ void Viewer::Run()
             if(bLocalizationMode)
                 mpSystem->DeactivateLocalizationMode();
 
+            // Save Atlas
+            mpSystem->SaveAtlasfromViewer();
+
             // Stop all threads
             mpSystem->Shutdown();
 
