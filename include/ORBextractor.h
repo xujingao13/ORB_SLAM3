@@ -23,6 +23,11 @@
 #include <list>
 #include <opencv2/opencv.hpp>
 
+#include <opencv2/core/cuda.hpp>
+#include <opencv2/cudafilters.hpp>
+#include <cuda/Fast.hpp>
+#include <cuda/Orb.hpp>
+
 
 namespace ORB_SLAM3
 {
@@ -80,7 +85,10 @@ public:
         return mvInvLevelSigma2;
     }
 
-    std::vector<cv::Mat> mvImagePyramid;
+    // std::vector<cv::Mat> mvImagePyramid;
+    bool mvImagePyramidAllocatedFlag;
+    std::vector<cv::cuda::GpuMat> mvImagePyramid;
+    std::vector<cv::cuda::GpuMat> mvImagePyramidBorder;
 
 protected:
 
@@ -106,6 +114,13 @@ protected:
     std::vector<float> mvInvScaleFactor;    
     std::vector<float> mvLevelSigma2;
     std::vector<float> mvInvLevelSigma2;
+
+    cv::Ptr<cv::cuda::Filter> mpGaussianFilter;
+    cuda::Stream mcvStream;
+
+    cuda::GpuFast gpuFast;
+    cuda::IC_Angle ic_angle;
+    cuda::GpuOrb gpuOrb;
 };
 
 } //namespace ORB_SLAM
