@@ -7,35 +7,60 @@ ENDIF()
 
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
+set(CMAKE_C_COMPILER "/usr/bin/gcc-11")
+set(CMAKE_CXX_COMPILER "/usr/bin/g++-11")
+
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall   -O3 -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3 -g")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -march=native")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
 
-find_package(CUDA QUIET REQUIRED)
-set(CUDA_PROPAGATE_HOST_FLAGS OFF)
-SET(CUDA_HOST_COMPILER /usr/bin/g++)
-LIST(APPEND CUDA_NVCC_FLAGS "--compiler-options -fno-strict-aliasing -use_fast_math")
+# 设置 C++14 标准
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Check C++11 or C++0x support
+# 检查编译器是否支持 C++14
 include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
 
-
-if(COMPILER_SUPPORTS_CXX11)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-   set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
-   add_definitions(-DCOMPILEDWITHC11)
-   message(STATUS "Using flag -std=c++14.")
-elseif(COMPILER_SUPPORTS_CXX0X)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-   set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++0x")
-   add_definitions(-DCOMPILEDWITHC0X)
-   message(STATUS "Using flag -std=c++0x.")
+if(COMPILER_SUPPORTS_CXX14)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++14")
+    add_definitions(-DCOMPILEDWITHC14)
+    add_definitions(-D_GLIBCXX_USE_NANOSLEEP)
+    message(STATUS "Using flag -std=c++14.")
 else()
-   message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. Please use a different C++ compiler.")
 endif()
+
+# 对于 CUDA，我们需要特别设置
+if(CUDA_FOUND)
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -std=c++14)
+    # 根据你的 CUDA 版本，你可能需要指定一个特定的 GPU 架构
+    # 例如：set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -arch=sm_50)
+endif()
+
+# 添加一些调试输出
+message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER}")
+message(STATUS "C++ compiler version: ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "C++ flags: ${CMAKE_CXX_FLAGS}")
+message(STATUS "CUDA flags: ${CUDA_NVCC_FLAGS}")
+
+# 设置 CUDA 12.2 的路径
+set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda-12.2")
+find_package(CUDA QUIET REQUIRED)
+
+
+link_directories(/usr/lib/x86_64-linux-gnu)
+find_package(OpenGL REQUIRED)
+
+
+set(CUDA_PROPAGATE_HOST_FLAGS OFF)
+SET(CUDA_HOST_COMPILER /usr/bin/g++-10)
+LIST(APPEND CUDA_NVCC_FLAGS "--compiler-options -fno-strict-aliasing -use_fast_math")
+LIST(APPEND CUDA_NVCC_FLAGS --expt-relaxed-constexpr)
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
@@ -64,6 +89,7 @@ ${Pangolin_INCLUDE_DIRS}
 ${Boost_INCLUDE_DIRS}
 ${CUDA_TOOLKIT_ROOT_DIR}/samples/common/inc
 ${CUDA_INCLUDE_DIRS}
+${OPENGL_INCLUDE_DIRS}
 )
 
 cuda_include_directories(
@@ -136,6 +162,8 @@ include/cuda/Allocator.hpp
 include/cuda/Cuda.hpp
 include/cuda/Fast.hpp
 include/cuda/Orb.hpp
+include/cuda/helper_cuda.h
+include/cuda/helper_string.h
 src/cuda/Allocator_gpu.cu
 src/cuda/Cuda.cu
 src/cuda/Fast_gpu.cu
@@ -144,6 +172,7 @@ include/Utils.hpp
 )
 
 add_subdirectory(Thirdparty/g2o)
+
 
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
@@ -155,6 +184,7 @@ ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lboost_serialization
 -lcrypto
+${PROJECT_NAME} ${OPENGL_LIBRARIES} EGL
 )
 
 # If RealSense SDK is found the library is added and its examples compiled

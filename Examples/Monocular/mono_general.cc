@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 
     int fps = 20;
     float dT = 1.f / fps;
-    ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::MONOCULAR, true);
+    ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::MONOCULAR, false);
     float imageScale = SLAM.GetImageScale();
 
     double t_resize = 0.f;
@@ -123,15 +123,21 @@ int main(int argc, char **argv)
     #ifdef COMPILEDWITHC11
             std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     #else
-            std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
+            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
     #endif
 
-            SLAM.TrackMonocular(im, tframe);
+            Sophus::SE3f Tcw = SLAM.TrackMonocular(im, tframe);
+            if (Tcw.translation().norm() > 0) {
+                cout << "Tcw translation: " << Tcw.translation().transpose() << endl;
+                cout << "Tcw rotation: " << Tcw.rotationMatrix() << endl;
+            } else {
+                cout << "Tracking failed" << endl;
+            }
 
     #ifdef COMPILEDWITHC11
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     #else
-            std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
+            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     #endif
 
 #ifdef REGISTER_TIMES

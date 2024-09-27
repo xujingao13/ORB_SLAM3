@@ -44,7 +44,7 @@
 #include "opencv2/core/cuda/utility.hpp"
 #include "opencv2/core/cuda/reduce.hpp"
 #include "opencv2/core/cuda/functional.hpp"
-#include <helper_cuda.h>
+#include <cuda/helper_cuda.h>
 #include <cuda/Fast.hpp>
 
 using namespace cv;
