@@ -147,6 +147,9 @@ public:
     std::vector<cv::Point3f> mvIniP3D;
     Frame mInitialFrame;
 
+    cv::Mat mImGrayPrev;  // 存储前一帧的灰度图
+    cv::Mat mImGrayCurr;  // 存储当前帧的灰度图
+    
     // Lists used to recover the full camera trajectory at the end of the execution.
     // Basically we store the reference keyframe for each frame and its relative transformation
     list<Sophus::SE3f> mlRelativeFramePoses;
@@ -219,6 +222,7 @@ protected:
 
     bool TrackLocalMap();
     void SearchLocalPoints();
+    void DrawMatches(const Frame &Frame1, const Frame &Frame2, const vector<int> &vMatches12);
 
     bool NeedNewKeyFrame();
     void CreateNewKeyFrame();

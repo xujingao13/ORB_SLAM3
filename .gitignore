@@ -58,6 +58,8 @@ Examples/ROS/ORB_SLAM3/build/
 dataset/
 .DS_Store
 */.DS_Store
+FeatureMatch-CPU/
+FeatureMatch-GPU/
 
 KeyFrameTrajectory.txt
 CameraTrajectory.txt

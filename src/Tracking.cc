@@ -1560,6 +1560,24 @@ Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, co
 
 Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp, string filename)
 {
+    mImGrayPrev = mImGrayCurr.clone();  // 保存前一帧
+    mImGrayCurr = im.clone();  // 保存当前帧
+
+    if(mImGrayCurr.channels()==3)
+    {
+        if(mbRGB)
+            cvtColor(mImGrayCurr,mImGrayCurr,cv::COLOR_RGB2GRAY);
+        else
+            cvtColor(mImGrayCurr,mImGrayCurr,cv::COLOR_BGR2GRAY);
+    }
+    else if(mImGrayCurr.channels()==4)
+    {
+        if(mbRGB)
+            cvtColor(mImGrayCurr,mImGrayCurr,cv::COLOR_RGBA2GRAY);
+        else
+            cvtColor(mImGrayCurr,mImGrayCurr,cv::COLOR_BGR2GRAY);
+    }
+
     mImGray = im;
     if(mImGray.channels()==3)
     {
@@ -2461,7 +2479,8 @@ void Tracking::MonocularInitialization()
         // Set Reference Frame
         if(mCurrentFrame.mvKeys.size()>100)
         {
-
+            cout << "Found " << mCurrentFrame.mvKeys.size() << " keypoints in initial frame" << endl;
+            
             mInitialFrame = Frame(mCurrentFrame);
             mLastFrame = Frame(mCurrentFrame);
             mvbPrevMatched.resize(mCurrentFrame.mvKeysUn.size());
@@ -2478,30 +2497,39 @@ void Tracking::MonocularInitialization()
                 }
                 mpImuPreintegratedFromLastKF = new IMU::Preintegrated(IMU::Bias(),*mpImuCalib);
                 mCurrentFrame.mpImuPreintegrated = mpImuPreintegratedFromLastKF;
-
             }
 
             mbReadyToInitializate = true;
+            cout << "Ready to initialize" << endl;
 
             return;
+        }
+        else
+        {
+            cout << "Not enough keypoints (" << mCurrentFrame.mvKeys.size() << ") for initialization" << endl;
         }
     }
     else
     {
         if (((int)mCurrentFrame.mvKeys.size()<=100)||((mSensor == System::IMU_MONOCULAR)&&(mLastFrame.mTimeStamp-mInitialFrame.mTimeStamp>1.0)))
         {
+            cout << "Too few matches or too much time has passed" << endl;
             mbReadyToInitializate = false;
-
             return;
         }
 
         // Find correspondences
         ORBmatcher matcher(0.9,true);
         int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
+        cout << "Found " << nmatches << " matches for initialization" << endl;
+
+
+        DrawMatches(mInitialFrame, mCurrentFrame, mvIniMatches);
 
         // Check if there are enough correspondences
-        if(nmatches<100)
+        if(nmatches<50)
         {
+            cout << "Not enough matches for initialization" << endl;
             mbReadyToInitializate = false;
             return;
         }
@@ -2511,6 +2539,8 @@ void Tracking::MonocularInitialization()
 
         if(mpCamera->ReconstructWithTwoViews(mInitialFrame.mvKeysUn,mCurrentFrame.mvKeysUn,mvIniMatches,Tcw,mvIniP3D,vbTriangulated))
         {
+            cout << "Successfully reconstructed with two views" << endl;
+            
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
             {
                 if(mvIniMatches[i]>=0 && !vbTriangulated[i])
@@ -2526,10 +2556,60 @@ void Tracking::MonocularInitialization()
 
             CreateInitialMapMonocular();
         }
+        else
+        {
+            cout << "Failed to reconstruct with two views" << endl;
+        }
     }
 }
 
+void Tracking::DrawMatches(const Frame &Frame1, const Frame &Frame2, const std::vector<int> &vMatches12)
+{
+    if(mImGrayPrev.empty() || mImGrayCurr.empty())
+    {
+        cout << "Error: One or both images are empty" << endl;
+        return;
+    }
 
+    cv::Mat imMatch;
+    cv::hconcat(mImGrayPrev, mImGrayCurr, imMatch);
+    cv::cvtColor(imMatch, imMatch, cv::COLOR_GRAY2BGR);  // 转换为彩色图像以绘制彩色特征点和线条
+
+    // 绘制第一帧的特征点
+    for(size_t i=0; i<Frame1.mvKeysUn.size(); i++)
+    {
+        cv::Point2f pt1 = Frame1.mvKeysUn[i].pt;
+        cv::circle(imMatch, pt1, 3, cv::Scalar(255,0,0), -1);
+    }
+
+    // 绘制第二帧的特征点（向右偏移width）
+    for(size_t i=0; i<Frame2.mvKeysUn.size(); i++)
+    {
+        cv::Point2f pt2 = Frame2.mvKeysUn[i].pt;
+        pt2.x += mImGrayPrev.cols;  // 向右偏移
+        cv::circle(imMatch, pt2, 3, cv::Scalar(0,0,255), -1);
+    }
+
+    // 绘制匹配线
+    for(size_t i=0; i<vMatches12.size(); i++)
+    {
+        if(vMatches12[i] >= 0)
+        {
+            cv::Point2f pt1 = Frame1.mvKeysUn[i].pt;
+            cv::Point2f pt2 = Frame2.mvKeysUn[vMatches12[i]].pt;
+            pt2.x += mImGrayPrev.cols;  // 向右偏移
+            cv::line(imMatch, pt1, pt2, cv::Scalar(0,255,0), 1);
+        }
+    }
+
+    // 显示匹配结果
+    cv::imshow("Initialization Matches", imMatch);
+    cv::waitKey(1);  // 等待1毫秒，允许图像显示
+
+    static int matchCount = 0;
+    cv::imwrite("./FeatureMatch-CPU/match_" + std::to_string(matchCount++) + ".png", imMatch);
+
+}
 
 void Tracking::CreateInitialMapMonocular()
 {
