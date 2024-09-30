@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 
     int fps = 20;
     float dT = 1.f / fps;
-    ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::MONOCULAR, false);
+    ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::MONOCULAR, true);
     float imageScale = SLAM.GetImageScale();
 
     double t_resize = 0.f;
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
                 cout << "Tcw translation: " << Tcw.translation().transpose() << endl;
                 cout << "Tcw rotation: " << Tcw.rotationMatrix() << endl;
             } else {
-                cout << "Tracking failed" << endl;
+                // cout << "Tracking failed" << endl;
             }
 
     #ifdef COMPILEDWITHC11

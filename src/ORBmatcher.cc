@@ -754,6 +754,13 @@ namespace ORB_SLAM3
 
         }
 
+        cout << "SearchForInitialization: " << endl;
+        cout << "Initial matches: " << nmatches << endl;
+        cout << "Matches after orientation check: " << nmatches << endl;
+        cout << "TH_LOW: " << TH_LOW << ", TH_HIGH: " << TH_HIGH << endl;
+        cout << "Number of keypoints in F1: " << F1.mvKeysUn.size() << endl;
+        cout << "Number of keypoints in F2: " << F2.mvKeysUn.size() << endl;
+
         //Update prev matched
         for(size_t i1=0, iend1=vnMatches12.size(); i1<iend1; i1++)
             if(vnMatches12[i1]>=0)

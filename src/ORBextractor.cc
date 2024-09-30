@@ -743,6 +743,9 @@ namespace ORB_SLAM3
             if (level != 0) {
                 ic_angle.join(allKeypoints[level - 1].data(), allKeypoints[level - 1].size());
             }
+
+            // // Add this print statement
+            // std::cout << "Level " << level << ": " << keypoints.size() << " keypoints" << std::endl;
         } // loop every level
 
         // compute orientations
