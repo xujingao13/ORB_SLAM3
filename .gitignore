@@ -59,6 +59,7 @@ dataset/
 .DS_Store
 */.DS_Store
 FeatureMatch-GPU/
+FeatureMatch-CPU/
 
 KeyFrameTrajectory.txt
 CameraTrajectory.txt

@@ -96,6 +96,10 @@ cuda_include_directories(
 ${CUDA_TOOLKIT_ROOT_DIR}/samples/common/inc
 )
 
+# CUDA compilation flags for improved precision
+LIST(APPEND CUDA_NVCC_FLAGS "-prec-sqrt=true")
+LIST(APPEND CUDA_NVCC_FLAGS "-prec-div=true")
+
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 # add_library(${PROJECT_NAME} SHARED

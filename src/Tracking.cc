@@ -2524,10 +2524,10 @@ void Tracking::MonocularInitialization()
         cout << "Found " << nmatches << " matches for initialization" << endl;
 
 
-        DrawMatches(mInitialFrame, mCurrentFrame, mvIniMatches);
+        // DrawMatches(mInitialFrame, mCurrentFrame, mvIniMatches);
 
         // Check if there are enough correspondences
-        if(nmatches<50)
+        if(nmatches<100)
         {
             cout << "Not enough matches for initialization" << endl;
             mbReadyToInitializate = false;
@@ -2556,10 +2556,10 @@ void Tracking::MonocularInitialization()
 
             CreateInitialMapMonocular();
         }
-        else
-        {
-            cout << "Failed to reconstruct with two views" << endl;
-        }
+        // else
+        // {
+        //     cout << "Failed to reconstruct with two views" << endl;
+        // }
     }
 }
 
@@ -2602,9 +2602,9 @@ void Tracking::DrawMatches(const Frame &Frame1, const Frame &Frame2, const std::
         }
     }
 
-    // 显示匹配结果
+
     cv::imshow("Initialization Matches", imMatch);
-    cv::waitKey(1);  // 等待1毫秒，允许图像显示
+    cv::waitKey(1);  
 
     // static int matchCount = 0;
     // cv::imwrite("./FeatureMatch/match_" + std::to_string(matchCount++) + ".png", imMatch);

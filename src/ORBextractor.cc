@@ -82,6 +82,59 @@ namespace ORB_SLAM3
     const int HALF_PATCH_SIZE = 15;
     const int EDGE_THRESHOLD = 19;
 
+    const float factorPI = (float)(CV_PI/180.f);
+    static void computeOrbDescriptor(const KeyPoint& kpt,
+                                     const Mat& img, const Point* pattern,
+                                     uchar* desc)
+    {
+        float angle = (float)kpt.angle*factorPI;
+        float a = (float)cos(angle), b = (float)sin(angle);
+
+        const uchar* center = &img.at<uchar>(cvRound(kpt.pt.y), cvRound(kpt.pt.x));
+        const int step = (int)img.step;
+
+#define GET_VALUE(idx) \
+        center[cvRound(pattern[idx].x*b + pattern[idx].y*a)*step + \
+               cvRound(pattern[idx].x*a - pattern[idx].y*b)]
+
+        // if (is_first)
+        // {
+        //     //print kpt
+        //     printf("CPU - keypoint x: %f, y: %f, size: %f, angle: %f\n", kpt.pt.x, kpt.pt.y, kpt.size, kpt.angle);
+        // }
+
+        for (int i = 0; i < 32; ++i, pattern += 16)
+        {
+            int t0, t1, val;
+            t0 = GET_VALUE(0); t1 = GET_VALUE(1);
+            val = t0 < t1;
+            t0 = GET_VALUE(2); t1 = GET_VALUE(3);
+            val |= (t0 < t1) << 1;
+            t0 = GET_VALUE(4); t1 = GET_VALUE(5);
+            val |= (t0 < t1) << 2;
+            t0 = GET_VALUE(6); t1 = GET_VALUE(7);
+            val |= (t0 < t1) << 3;
+            t0 = GET_VALUE(8); t1 = GET_VALUE(9);
+            val |= (t0 < t1) << 4;
+            t0 = GET_VALUE(10); t1 = GET_VALUE(11);
+            val |= (t0 < t1) << 5;
+            t0 = GET_VALUE(12); t1 = GET_VALUE(13);
+            val |= (t0 < t1) << 6;
+            t0 = GET_VALUE(14); t1 = GET_VALUE(15);
+            val |= (t0 < t1) << 7;
+
+            desc[i] = (uchar)val;
+            // if (is_first && i == 31)
+            // {
+            //     for (int j = 0; j < 32; j++)
+            //     {
+            //         printf("CPU - desc[%d]: %x\n", j, desc[j]);
+            //     }
+            // }
+        }
+#undef GET_VALUE
+    }
+
 
     static int bit_pattern_31_[256*4] =
             {
@@ -342,6 +395,24 @@ namespace ORB_SLAM3
                     7,0, 12,-2/*mean (0.127002), correlation (0.537452)*/,
                     -1,-6, 0,-11/*mean (0.127148), correlation (0.547401)*/
             };
+
+    static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors,
+                                    const vector<Point>& pattern)
+    {
+        descriptors = Mat::zeros((int)keypoints.size(), 32, CV_8UC1);
+
+        for (size_t i = 0; i < keypoints.size(); i++)
+        {
+            // if (i == 0)
+            // {
+            //     computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i), true);
+            // }
+            // else{
+            //     computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i), false);
+            // }
+            computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i));
+        }
+    }
 
     ORBextractor::ORBextractor(int _nfeatures, float _scaleFactor, int _nlevels,
                                int _iniThFAST, int _minThFAST):
@@ -771,8 +842,8 @@ namespace ORB_SLAM3
 
         vector < vector<KeyPoint> > allKeypoints;
         ComputeKeyPointsOctTree(allKeypoints);
-        //ComputeKeyPointsOld(allKeypoints);
 
+        // GPU-Version
         Mat descriptors;
 
         int nkeypoints = 0;
@@ -811,7 +882,8 @@ namespace ORB_SLAM3
             if (level == 0) {
                 gpuOrb.launch_async(gMat, keypoints.data(), keypoints.size());
             }
-            Mat desc = descriptors.rowRange(offset, offset + nkeypointsLevel);
+            //Mat desc = descriptors.rowRange(offset, offset + nkeypointsLevel);
+            Mat desc = cv::Mat(nkeypointsLevel, 32, CV_8U);
             gpuOrb.join(desc);
 
             offset += nkeypointsLevel;
@@ -845,8 +917,98 @@ namespace ORB_SLAM3
                 i++;
             }
         }
+        // cout << "First Descriptors by GPU: " << endl;   
+        // for (int i = 0; i < 1; ++i) {
+        //     cout << "Descriptor " << i << ": ";
+        //     for (int j = 0; j < 32; ++j) {
+        //         printf("%02x ", descriptors.at<uchar>(i, j));
+        //     }
+        //     cout << endl;
+        // }
         //cout << "[ORBextractor]: extracted " << _keypoints.size() << " KeyPoints" << endl;
         return monoIndex;
+
+        //CPU-Version
+        // Mat descriptors;
+        // descriptors.release();
+
+        // // int nkeypoints = 0;
+        // nkeypoints = 0;
+        // for (int level = 0; level < nlevels; ++level)
+        //     nkeypoints += (int)allKeypoints[level].size();
+        // if( nkeypoints == 0 )
+        //     _descriptors.release();
+        // else
+        // {
+        //     _descriptors.create(nkeypoints, 32, CV_8U);
+        //     descriptors = _descriptors.getMat();
+        // }
+
+        // //_keypoints.clear();
+        // //_keypoints.reserve(nkeypoints);
+        // _keypoints = vector<cv::KeyPoint>(nkeypoints);
+
+        // //int offset = 0;
+        // offset = 0;
+        // //Modified for speeding up stereo fisheye matching
+        // // int monoIndex = 0, stereoIndex = nkeypoints-1;
+        // monoIndex = 0;
+        // stereoIndex = nkeypoints-1;
+        // for (int level = 0; level < nlevels; ++level)
+        // {
+        //     vector<KeyPoint>& keypoints = allKeypoints[level];
+        //     int nkeypointsLevel = (int)keypoints.size();
+        //     if(nkeypointsLevel==0)
+        //         continue;
+        //     // preprocess the resized image
+        //     cuda::GpuMat workingMat = mvImagePyramid[level].clone();
+        //     // mpGaussianFilter->apply(workingMat, workingMat);
+
+        //     // Compute the descriptors
+        //     Mat cpuWorkingMat;
+        //     workingMat.download(cpuWorkingMat);
+        //     Mat desc = cv::Mat(nkeypointsLevel, 32, CV_8U);
+        //     computeDescriptors(cpuWorkingMat, keypoints, desc, pattern);
+        //     // print desc[0]
+        //     // cout << "First Intermediate Descriptor by CPU: " << endl;
+        //     // for (int j = 0; j < 32; j++) {
+        //     //     printf("%02x ", desc.at<uchar>(0, j));
+        //     // }
+        //     // cout << endl;
+
+        //     offset += nkeypointsLevel;
+        //     float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
+        //     int i = 0;
+        //     for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
+        //                  keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint){
+
+        //         // Scale keypoint coordinates
+        //         if (level != 0){
+        //             keypoint->pt *= scale;
+        //         }
+
+        //         if(keypoint->pt.x >= vLappingArea[0] && keypoint->pt.x <= vLappingArea[1]){
+        //             //printf("CPU- keypoint x: %f, y: %f, size: %f, angle: %f\n", keypoint->pt.x, keypoint->pt.y, keypoint->size, keypoint->angle);
+        //             _keypoints.at(stereoIndex) = (*keypoint);
+        //             desc.row(i).copyTo(descriptors.row(stereoIndex));
+        //             stereoIndex--;
+        //         }
+        //         else{
+        //             _keypoints.at(monoIndex) = (*keypoint);
+        //             desc.row(i).copyTo(descriptors.row(monoIndex));
+        //             monoIndex++;
+        //         }
+        //         i++;
+        //     }
+        // }
+        // cout << "First Descriptors by CPU: " << endl;   
+        // cout << "Descriptor " << nkeypoints - 1 << ": ";
+        // for (int j = 0; j < 32; ++j) {
+        //     printf("%02x ", descriptors.at<uchar>(nkeypoints - 1, j));
+        // }
+        // cout << endl;
+        // //cout << "[ORBextractor]: extracted " << _keypoints.size() << " KeyPoints" << endl;
+        // return monoIndex;
     }
 
     void ORBextractor::ComputePyramid(Mat image) {

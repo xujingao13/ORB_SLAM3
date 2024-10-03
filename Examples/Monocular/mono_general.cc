@@ -127,12 +127,12 @@ int main(int argc, char **argv)
     #endif
 
             Sophus::SE3f Tcw = SLAM.TrackMonocular(im, tframe);
-            if (Tcw.translation().norm() > 0) {
-                cout << "Tcw translation: " << Tcw.translation().transpose() << endl;
-                cout << "Tcw rotation: " << Tcw.rotationMatrix() << endl;
-            } else {
-                // cout << "Tracking failed" << endl;
-            }
+            // if (Tcw.translation().norm() > 0) {
+            //     cout << "Tcw translation: " << Tcw.translation().transpose() << endl;
+            //     cout << "Tcw rotation: " << Tcw.rotationMatrix() << endl;
+            // } else {
+            //     // cout << "Tracking failed" << endl;
+            // }
 
     #ifdef COMPILEDWITHC11
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
