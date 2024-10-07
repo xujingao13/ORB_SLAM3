@@ -1,3 +1,11 @@
+# Self-modified ORB-SLAM3
+This repository contains modifications to the original ORB-SLAM3 to enhance certain features. These changes are tailored for specific use cases and may differ from the original implementation. The major action items are:
+
+* **Map Save and Load**: save and load maps through ``.osa`` file by specifying the configuration in the ``.yaml`` file.
+* **GPU Acceleration**: leverage the GPU power to accelerate the ORB feature point extraction and descriptor calculation. The function is only deployed in the [gpu-dev](https://github.com/xujingao13/ORB_SLAM3/tree/gpu-dev) branch.
+* **Functional Integration in Pangolin frame**: add some buttons in the Pangolin view frame to trigger some specific functions, including save map, top view, etc.
+
+
 # ORB-SLAM3
 
 ### V1.0, December 22th, 2021
